@@ -296,7 +296,7 @@ Renderer.prototype = {
     switch (feature.geometry.type) {
       case 'Polygon':        // render in one path
       case 'MultiPolygon':
-        this._polygon(feature, accum, bbox, featureBounds);
+        this._polygon(feature, accum, bbox, featureBounds, feature.properties);
         break;
       case 'LineString':      // render in one path
       case 'MultiLineString':
@@ -515,12 +515,22 @@ Renderer.prototype = {
    * @param  {Array.<Number>} bbox
    * @param  {Array.<Number>} featureBounds
    */
-  _polygon: function (feature, accum, bbox, featureBounds) {
+  _polygon: function (feature, accum, bbox, featureBounds, properties) {
     var properties = feature.properties;
-    var className = ('polygon ' + (properties.className || '')).trim();
-    accum.push('<path class="', className,
-      '" d="', this._getPath(feature, true, bbox, featureBounds), '"',
-      this._getStyles(feature, bbox, featureBounds), '/>');
+    var className = ('polygon ' + (properties.className || properties.province || '')).trim();
+    var id = ` id="${properties.province}"`;
+    var propertyKeys = Object.keys(properties);
+    var attributeString = propertyKeys.reduce((result, current) => `${result} ${current}="${properties[current]}" `, ' ');
+    accum.push(
+        `<path class="${className}"`,
+          id,
+          attributeString,
+          ' d="', 
+          this._getPath(feature, true, bbox, featureBounds),
+          '"',
+          this._getStyles(feature, bbox, featureBounds),
+        '/>'
+      );
 
     if (this._type && feature.properties[this._type] === TEXTBOX) {
       this._text(feature, accum, bbox, featureBounds);
@@ -540,7 +550,7 @@ Renderer.prototype = {
       this._symbol(feature, accum, bbox, featureBounds);
     } else {
       var coord = feature.geometry.coordinates;
-      var className = ('point ' + (feature.properties.className || '')).trim();
+      var className = ('point ' + (feature.properties.className || feature.properties.labelFor || '')).trim();
 
       var radius = feature.properties.radius || 1;
 
@@ -550,10 +560,15 @@ Renderer.prototype = {
       if (type && type === TEXTBOX) {
         this._text(feature, accum, bbox, featureBounds);
       } else {
-        accum.push('<circle class="', className,
-          '" cx="', coord[0], '" cy="', coord[1],
-          '" r="',  radius,  '" ',
-          this._getStyles(feature, bbox, featureBounds), ' />');
+        accum.push(
+          `<circle class="${className}" `,
+          `cx="${coord[0]}" `, 
+          `cy="${coord[1]}" `,
+          `r="${radius}" `,
+          `labelFor="${feature.properties.labelFor}" `,
+          this._getStyles(feature, bbox, featureBounds), 
+          ' />');
+  
       }
       padBBox(featureBounds, radius);
       extendBBox(bbox, featureBounds.slice(0, 2));
@@ -875,7 +890,7 @@ Renderer.prototype = {
       currentStyle['fill-rule']    = styles.fillRule    ||
         (feature.geometry.type === 'MultiPolygon') ? 'nonzero' : 'evenodd';
     } else {
-      currentStyle['fill'] = 'none';
+      currentStyle['fill'] = '#FFAA00';
     }
 
     for (var rule in currentStyle) {
