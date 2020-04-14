@@ -19,7 +19,7 @@ var Styles = {
   },
 
   'Point': {
-    radius: 3,
+    radius: 1,
     stroke: COLOR,
     weight: WEIGHT,
     color: COLOR,
